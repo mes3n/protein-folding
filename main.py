@@ -1,75 +1,65 @@
 import numpy as np
-import molmod as mm  # load 
 
-from enum import Enum
+import biotite.structure.io.pdb
+import biotite.structure
 
+from graph import Plot
+from assemble_protein import AssembleTC
 
 '''
-Fold protein based of hydrogen bonds, sulfide bridges and charges
+Fold protein based on partial charges of atoms
 '''
-
-class S(Enum):  # enumerator for atomic symbols
-    H = 'hydrogen'
-    O = 'oxygen'
-    N = 'nitrogen'
-    S = 'sulfide'
-
-class AA(Enum):  # enumerator for amino acids
-    A = 'alanine'
-    B =	'asparagine'
-    C =	'cysteine'
-    D =	'aspartic acid'
-    E =	'glutamic acid'
-    F =	'phenylalanine'
-    G =	'glycine'
-    H =	'histidine'
-    I =	'isoleucine'
-    K =	'lysine'
-    L =	'leucine'
-    M =	'methionine'
-    N =	'asparagine'
-    P =	'proline'
-    Q =	'glutamine'
-    R =	'arginine'
-    S =	'serine'
-    T =	'threonine'
-    U = 'selenocysteine'
-    V =	'valine'
-    W =	'tryptophan'
-    Y =	'tyrosine'
 
 
 class Atom:
-    def __init__(self, position: np.array, symbol: str, *args, **kwargs):
+    def __init__(self, position: np.array, charge: float, symbol: str, *args, **kwargs):
         self.position: np.array = position
+        self.partial_charge: float = charge
         self.symbol: str = symbol
 
-        
-# class AminoAcid:
-#     def __init__(self, position: np.array, side_chain: list[Atom], *args, **kwargs):
-#         self.chains: dict[str, list[Atom]] = {
-#             'main': main_chain, 'side': side_chain
-#         }
-#         self.position: np.array = position  # position of the amino acids central carbon atom
+    def get_forces(atoms):
+        pass
+
+    def __str__(self):
+        return f'{self.symbol}, {self.position}, {self.partial_charge}'
 
 
 class Protein:
-    def __init__(self, sequence: str, *args, **kwargs):
-        
-        self.amino_acids = [getattr(AA, c) for c in sequence]
+    def __init__(self, file_name='', *args, **kwargs):
+        if len(file_name):
+            try:
+                pdbfile = biotite.structure.io.pdb.PDBFile.read(
+                    file_name)
+                self.molecule: biotite.structure.AtomArray = biotite.structure.io.pdb.get_structure(
+                    pdbfile, model=True)  # only kept for displaying the molecule
+            except FileNotFoundError as ex:
+                print(f"Could not load file: {file_name}. Loading from biotite info.")
+                self.molecule = AssembleTC.assemble()
+        else:
+            self.molecule = AssembleTC.assemble()
 
-        # self.amino_acids: list[AminoAcid] = amino_acids
+        self.molecule.bonds = biotite.structure.connect_via_residue_names(
+            self.molecule)
+        self.charges = biotite.structure.partial_charges(self.molecule)
+
+        self.aa_start_index = [
+            j for i, j, _ in self.molecule.bonds.as_array()
+            if self.molecule.res_id[i] != self.molecule.res_id[j]
+        ]
+
+        self.atoms: np.array = np.array([Atom(pos, q, s) for pos, q, s in zip(
+            self.molecule.coord, self.charges, self.molecule.element)])
+
+        self.show_graph()
+
+    def show_graph(self):
+        self.molecule._coord = np.array([atom.position for atom in self.atoms])
+        Plot.plot(self.molecule, self.charges)
 
 
 def main():
-    TRP_CAGE_SEQ = "NLYIQWLKDGGPSSGRPPPS"
 
-    trp_cage = Protein(TRP_CAGE_SEQ)
-    print(trp_cage.amino_acids)
-
-    for aa in AA:
-        if aa not in trp_cage.amino_acids:
-            print(aa)
+    trp_cage = Protein()
 
     return
 
