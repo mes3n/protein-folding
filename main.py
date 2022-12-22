@@ -4,7 +4,7 @@ import biotite.structure.io.pdb
 import biotite.structure
 
 from graph import Plot
-from assemble_protein import AssembleTC
+from assemble import AssembleTC
 
 '''
 Fold protein based on partial charges of atoms
@@ -16,9 +16,6 @@ class Atom:
         self.position: np.array = position
         self.partial_charge: float = charge
         self.symbol: str = symbol
-
-    def get_forces(atoms):
-        pass
 
     def __str__(self):
         return f'{self.symbol}, {self.position}, {self.partial_charge}'
@@ -48,9 +45,22 @@ class Protein:
         ]
 
         self.atoms: np.array = np.array([Atom(pos, q, s) for pos, q, s in zip(
-            self.molecule.coord, self.charges, self.molecule.element)])
+            self.molecule.coord, self.charges, self.molecule.element)], dtype=Atom)
 
-        self.show_graph()
+        # self.show_graph()
+
+        self.calculate_net_torque_on_seg(self.aa_start_index[10])
+
+    def calculate_torque_on_seg(self, index):
+        torque = 0.0
+        for atom1 in self.atoms[:index]:
+            for atom2 in self.atoms[index:]:
+                dpos = atom1.position - atom2.position
+                print(np.linalg.norm(dpos))
+
+
+    def rotate_segment(self, index, theta, origin):
+        pass
 
     def show_graph(self):
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
