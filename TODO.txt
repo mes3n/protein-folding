@@ -1,9 +1,0 @@
-Decide if to use ase? openmm or do from bottom up to better simulate specifics
-
-if doing from scratch
-    remove conda and openmm, remove ase with pip
-
-else
-    do pyenv, install mayavi (3d graph)
-
-Use .xyz format file
