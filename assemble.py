@@ -30,8 +30,8 @@ class AssembleTC:
         [-6.821, 4.923, -2.394]
     ])
 
-
-    def create_raw_backbone_coord(number_of_res):
+    @staticmethod
+    def create_raw_backbone_coord(number_of_res: int):
         """
         Create coordinates for straight peptide chain in z-plane.
         The peptide bonds are in trans configuration.
@@ -63,7 +63,7 @@ class AssembleTC:
                 coord[i] = coord[i-1] + bond_vector * length / norm(bond_vector)
         return coord
 
-
+    @staticmethod
     def append_residue(chain, residue):
         """
         Append a residue to an existing chain.
@@ -106,8 +106,8 @@ class AssembleTC:
         )
         return chain
 
-
-    def assemble_peptide(sequence):
+    @staticmethod
+    def assemble_peptide(sequence) -> struc.AtomArray:
         res_names = [seq.ProteinSequence.convert_letter_1to3(r) for r in sequence]
         backbone_coord = AssembleTC.create_raw_backbone_coord(len(sequence))
 
@@ -144,6 +144,7 @@ class AssembleTC:
                 # )
         return chain
 
+    @staticmethod
     def assemble():
         # Sequence of an antimicrobial peptide
         sequence = seq.ProteinSequence("NLYIQWLKDGGPSSGRPPPS")

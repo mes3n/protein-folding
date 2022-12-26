@@ -9,6 +9,7 @@ import biotite.structure.info as info
 
 
 class Plot:
+    @staticmethod
     def plot(molecule, charges, show_symbols=False):
         # The number of iterations for the PEOE algorithm
         ITERATION_NUMBER = 6
