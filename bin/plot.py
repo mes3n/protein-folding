@@ -93,10 +93,14 @@ class Plot:
 
         self.fig.tight_layout()
         plt.show()
-
-        plt.pause(2)
+        plt.pause(0.04)
 
     def update(self, molecule):
+        pca: PCA = PCA(n_components=3)
+        pca.fit(molecule.coord)
+        molecule = struc.align_vectors(
+            molecule, pca.components_[-1], [0, 0, 1])
+
         self.ax = self.fig.add_subplot(111, projection="3d")
 
         graphics.plot_ball_and_stick_model(
@@ -109,7 +113,12 @@ class Plot:
                 linewidth=0, alpha=Plot.RAY_ALPHA
             )
 
-        plt.pause(5)
+
+        plt.show()
+        plt.pause(0.04)
+
+    def pause(self):
+        plt.ioff()
 
     @staticmethod
     def plot(molecule, charges, show_symbols=False):
