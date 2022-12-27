@@ -8,7 +8,7 @@ from plot import Plot
 from assemble import AssembleTC
 
 
-FORCE_CONSTANT = 1
+FORCE_CONSTANT = 0.1  # TODO: find a good constant
 
 '''
 Fold protein based on partial charges of atoms
@@ -36,7 +36,7 @@ class Atom:
         self.position: np.ndarray = position
         self.partial_charge: float = charge
         self.symbol: str = symbol
-        
+
 
 class Protein:
     def __init__(self, file_name='', *args, **kwargs) -> None:
@@ -59,12 +59,13 @@ class Protein:
         self.aa_start_index: list[int] = [
             j for i, j, _ in self.molecule.bonds.as_array()
             if self.molecule.res_id[i] != self.molecule.res_id[j]
-        ]
+        ]  # add the latter index of the bond if the bonds are on seperate aminoacids
 
         self.atoms: np.ndarray[Atom, np.dtype] = np.array([Atom(pos, q, s) for pos, q, s in zip(
-            self.molecule.coord, self.charges, self.molecule.element)])
+            self.molecule.coord, self.charges, self.molecule.element)])  
+        # create custom molecule class from biotite molecule
 
-        self.plot: Plot = None
+        self.plot: Plot = None  # variable to manage background plot
 
     def calculate_torque_on_segs(self, split: int) -> tuple[np.ndarray[float, np.dtype], np.ndarray[float, np.dtype]]:
         pivot_point = self.atoms[split].position
@@ -78,14 +79,18 @@ class Protein:
             for atom_right in self.atoms[split:]:
                 delta_posistion = atom_left.position - atom_right.position
                 distance = np.linalg.norm(delta_posistion)
-                if distance > 0.1:  # TODO: idk what to put here unit wise (seems good tho)
+                # TODO: idk what to put here unit wise (seems good tho)
+                if distance > 0.1:
                     direction = delta_posistion / distance
-                    radius_left = axis_left * \
-                        (np.linalg.norm(atom_left.position - pivot_point) / np.linalg.norm(axis_left))
-                    radius_right = axis_right * \
-                        (np.linalg.norm(atom_right.position - pivot_point) / np.linalg.norm(axis_right))
+                    radius_left = axis_left * (np.linalg.norm(atom_left.position -
+                         pivot_point) / np.linalg.norm(axis_left))
+                    radius_right = axis_right * (np.linalg.norm(atom_right.position -
+                         pivot_point) / np.linalg.norm(axis_right))
 
-                    force = FORCE_CONSTANT*(atom_left.partial_charge*atom_right.partial_charge)*(distance**-2)
+                    force = FORCE_CONSTANT * \
+                        (atom_left.partial_charge * atom_right.partial_charge) * (distance**-2)
+                    if atom_left.partial_charge*atom_right.partial_charge <= 0.0:
+                        force *= -1.0  # repuslive force if same signs
 
                     net_torque_left += np.cross((direction * force), radius_left)
                     net_torque_right += np.cross((-direction * force), radius_right)
@@ -94,7 +99,7 @@ class Protein:
 
     def rotate_segments(self, index: int) -> None:
         origin = self.atoms[index].position
-        
+
         axis_left = self.atoms[0].position - origin
         axis_right = self.atoms[-1].position - origin
 
@@ -114,29 +119,24 @@ class Protein:
                 rotation_axis_right, np.linalg.norm(torque_right)
             ), atom.position - origin) + origin
 
-    def fold(self, iterations, gui=False) -> None:
-        if gui: self.plot = Plot(self.molecule, self.charges)
+        # TODO: IMPORTANT
+        # TODO: check if atoms collide
+        # TODO: if atoms collide: undo rotation
 
-        # for i in range(iterations):
-        #     for index in self.aa_start_index:
-        #         self.rotate_segments(index)
-        #         print(f'{i}: {index}')
-        #         if gui: self.update_plot()
+    def fold(self, iterations, gui=0) -> None:
+        if gui != 0:
+            self.plot = Plot(self.molecule, self.charges)
 
-        index = self.aa_start_index[10]
-        origin = self.atoms[index].position
-
-        for atom in self.atoms[:index]:
-            atom.position = np.dot(rotation_matrix(
-                np.array([1., 0., 0.]), np.pi * 0.25
-            ), atom.position - origin) + origin
-
-        for atom in self.atoms[index:]:
-            atom.position = np.dot(rotation_matrix(
-                np.array([1., 0., 0.]), -np.pi * 0.25
-            ), atom.position - origin) + origin
-
-        self.create_plot()
+        for i in range(iterations):
+            for index in self.aa_start_index:
+                self.rotate_segments(index)
+                print(f'{i}: {index}')
+                if gui == 2:
+                    self.update_plot()
+            if gui == 1:
+                self.update_plot()
+        if gui != 0:
+            self.plot.close()
 
     def update_plot(self) -> None:
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
@@ -150,7 +150,8 @@ class Protein:
 def main() -> None:
 
     trp_cage: Protein = Protein()
-    trp_cage.fold(1)
+    trp_cage.fold(0, 2)
+    trp_cage.create_plot()
 
     return
 
