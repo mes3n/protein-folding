@@ -114,8 +114,9 @@ class Plot:
 
         plt.pause(0.04)
 
-    def pause(self):
+    def close(self):
         plt.ioff()
+        plt.close(1)
 
     @staticmethod
     def plot(molecule, charges, show_symbols=False):
