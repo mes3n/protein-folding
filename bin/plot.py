@@ -92,7 +92,6 @@ class Plot:
             label.set_color("white")
 
         self.fig.tight_layout()
-        plt.show()
         plt.pause(0.04)
 
     def update(self, molecule):
@@ -113,8 +112,6 @@ class Plot:
                 linewidth=0, alpha=Plot.RAY_ALPHA
             )
 
-
-        plt.show()
         plt.pause(0.04)
 
     def pause(self):
