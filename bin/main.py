@@ -7,6 +7,7 @@ import biotite.structure
 from plot import Plot
 from assemble import AssembleTC
 
+import sys
 
 FORCE_CONSTANT = 0.1  # TODO: find a good constant
 
@@ -149,8 +150,25 @@ class Protein:
 
 def main() -> None:
 
+    iterations = 6
+    gui = 0
+
+    if len(sys.argv) > 1:
+        try:
+            iterations = int(sys.argv[1])
+        except ValueError:
+            sys.exit("Invalid input. Enter number of iterations as an int.")
+
+    if len(sys.argv) > 1:
+        try:
+            gui = int(sys.argv[1])
+            assert 0 <= gui <= 2
+        except (ValueError, AssertionError):
+            sys.exit("Invalid input. Enter gui mode as an 0 <= int <= 2.")
+
+
     trp_cage: Protein = Protein()
-    trp_cage.fold(0, 2)
+    trp_cage.fold(iterations, gui)
     trp_cage.create_plot()
 
     return
