@@ -81,7 +81,7 @@ class Protein:
                 delta_posistion = atom_left.position - atom_right.position
                 distance = np.linalg.norm(delta_posistion)
                 # TODO: idk what to put here unit wise (seems good tho)
-                if distance > 0.1 or atom_left.symbol == 'H' or atom_right.symbol == 'H':  # TODO: this is wrong
+                if distance > 0.1 or atom_left.symbol == 'H' or atom_right.symbol == 'H':
                     direction = delta_posistion / distance
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
