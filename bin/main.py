@@ -81,7 +81,7 @@ class Protein:
                 delta_posistion = atom_left.position - atom_right.position
                 distance = np.linalg.norm(delta_posistion)
                 # TODO: idk what to put here unit wise (seems good tho)
-                if distance > 0.1:
+                if distance > 0.1 or atom_left.symbol == 'H' or atom_right.symbol == 'H':
                     direction = delta_posistion / distance
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
@@ -159,9 +159,9 @@ def main() -> None:
         except ValueError:
             sys.exit("Invalid input. Enter number of iterations as an int.")
 
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         try:
-            gui = int(sys.argv[1])
+            gui = int(sys.argv[2])
             assert 0 <= gui <= 2
         except (ValueError, AssertionError):
             sys.exit("Invalid input. Enter gui mode as an 0 <= int <= 2.")

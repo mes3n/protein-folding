@@ -147,5 +147,5 @@ class AssembleTC:
     @staticmethod
     def assemble():
         # Sequence of an antimicrobial peptide
-        sequence = seq.ProteinSequence("NLYIQWLKDGGPSSGRPPPS")
+        sequence = seq.ProteinSequence("NLYIQWLKDGGPSSGRPPPS")  # NLYIQWLKDGGPSSGRPPPS
         return AssembleTC.assemble_peptide(sequence)
