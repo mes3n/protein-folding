@@ -52,10 +52,23 @@ class Protein:
                 self.molecule: biotite.structure.AtomArray = AssembleTC.assemble()
         else:
             self.molecule: biotite.structure.AtomArray = AssembleTC.assemble()
-
+        
         self.molecule.bonds = biotite.structure.connect_via_residue_names(  # type: ignore
             self.molecule)
         self.charges = biotite.structure.partial_charges(self.molecule)  # type: ignore
+
+
+        # # TODO: create atom without H-C H atoms
+        
+        # for i, j, n in self.molecule.bonds.as_array():
+        #     if (self.molecule.element[i], self.molecule.element[j]) == ('C', 'H') and n == biotite.structure.BondType.SINGLE:
+        #         if abs(self.charges[j]) > 0.05:
+        #             print(self.molecule.element[i], self.charges[i], self.molecule.element[j], self.charges[j])
+
+        # print(f'AVERAGE: {sum(self.charges) / len(self.charges)}')
+        # print(f'MAX: {max(self.charges)}')
+        # print(f'MIN: {min(self.charges)}')
+        # maybe not :/
 
         self.aa_start_index: list[int] = [
             j for i, j, _ in self.molecule.bonds.as_array()
@@ -74,27 +87,51 @@ class Protein:
         net_torque_left: np.ndarray[float, np.dtype] = np.array([0., 0., 0.])
         net_torque_right: np.ndarray[float, np.dtype] = np.array([0., 0., 0.])
 
+        molecule_center = np.mean([a.position for a in self.atoms], axis=0)
         axis_left = self.atoms[0].position - pivot_point
         axis_right = self.atoms[-1].position - pivot_point
+
         for atom_left in self.atoms[:split]:
             for atom_right in self.atoms[split:]:
                 delta_posistion = atom_left.position - atom_right.position
                 distance = np.linalg.norm(delta_posistion)
-                # TODO: idk what to put here unit wise (seems good tho)
-                if distance > 0.1 or atom_left.symbol == 'H' or atom_right.symbol == 'H':
-                    direction = delta_posistion / distance
+                if distance > 0.0:
+
+                    # CALCULATE ELECTROSTATIC FORCE (WEAK)
+                    dir_left_to_right = delta_posistion / distance
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
                     radius_right = axis_right * (np.linalg.norm(atom_right.position -
                          pivot_point) / np.linalg.norm(axis_right))
 
-                    force = FORCE_CONSTANT * \
-                        (atom_left.partial_charge * atom_right.partial_charge) * (distance**-2)
-                    if atom_left.partial_charge*atom_right.partial_charge <= 0.0:
-                        force *= -1.0  # repuslive force if same signs
+                    electrostatic_force = 0.1 * (atom_left.partial_charge * atom_right.partial_charge) * (distance**-2)
+                    if atom_left.partial_charge*atom_right.partial_charge > 0.0:
+                        electrostatic_force *= -1.0  # repuslive force if same signs
 
-                    net_torque_left += np.cross((direction * force), radius_left)
-                    net_torque_right += np.cross((-direction * force), radius_right)
+                    # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
+                    # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
+                    hydrophobicity_left  = 0.000002 * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(atom_left.position - molecule_center)
+                    hydrophobicity_right = 0.000002 * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(atom_right.position - molecule_center)
+                    
+                    left_to_center  = atom_left.position - molecule_center
+                    right_to_center = atom_right.position - molecule_center
+
+                    # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO
+                    h_bond_force = 0.0
+                    if distance < 0.2:
+                        if atom_left.element == 'H':
+                            if atom_right.element in ('O', 'N'):
+                                h_bond_force = 1.0e-04
+                        if atom_right.element == 'H':
+                            if atom_left.element in ('O', 'N'):
+                                h_bond_force = 1.0e-04
+
+                    net_torque_left += np.cross((
+                        (dir_left_to_right * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
+                    ), radius_left)
+                    net_torque_right += np.cross((
+                        (-dir_left_to_right * (electrostatic_force + h_bond_force)) + (hydrophobicity_right * right_to_center)
+                    ), radius_right)
 
         return net_torque_left, net_torque_right
 
@@ -120,9 +157,24 @@ class Protein:
                 rotation_axis_right, np.linalg.norm(torque_right)
             ), atom.position - origin) + origin
 
-        # TODO: IMPORTANT
-        # TODO: check if atoms collide
-        # TODO: if atoms collide: undo rotation
+        # check if atoms collide
+        # if atoms collide: undo rotation
+        for a1 in self.atoms:
+            for a2 in self.atoms:
+                if a1 is not a2:
+                    if np.linalg.norm(a1.position - a2.position) < 0.1 :
+                        for atom in self.atoms[:index]:
+                            atom.position = np.dot(rotation_matrix(
+                                rotation_axis_left, -np.linalg.norm(torque_left)
+                            ), atom.position - origin) + origin
+
+                        for atom in self.atoms[index:]:
+                            atom.position = np.dot(rotation_matrix(
+                                rotation_axis_right, -np.linalg.norm(torque_right)
+                            ), atom.position - origin) + origin
+                        
+                        return
+
 
     def fold(self, iterations, gui=0) -> None:
         if gui != 0:
