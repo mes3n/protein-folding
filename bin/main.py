@@ -5,6 +5,7 @@ import biotite.structure.io.pdb
 import biotite.structure
 
 from plot import Plot
+from lineplt import LinePlt
 from assemble import AssembleTC
 
 import sys
@@ -57,19 +58,8 @@ class Protein:
             self.molecule)
         self.charges = biotite.structure.partial_charges(self.molecule)  # type: ignore
 
-
         # # TODO: create atom without H-C H atoms
         
-        # for i, j, n in self.molecule.bonds.as_array():
-        #     if (self.molecule.element[i], self.molecule.element[j]) == ('C', 'H') and n == biotite.structure.BondType.SINGLE:
-        #         if abs(self.charges[j]) > 0.05:
-        #             print(self.molecule.element[i], self.charges[i], self.molecule.element[j], self.charges[j])
-
-        # print(f'AVERAGE: {sum(self.charges) / len(self.charges)}')
-        # print(f'MAX: {max(self.charges)}')
-        # print(f'MIN: {min(self.charges)}')
-        # maybe not :/
-
         self.aa_start_index: list[int] = [
             j for i, j, _ in self.molecule.bonds.as_array()
             if self.molecule.res_id[i] != self.molecule.res_id[j]
@@ -95,9 +85,9 @@ class Protein:
             for atom_right in self.atoms[split:]:
                 delta_posistion = atom_left.position - atom_right.position
                 distance = np.linalg.norm(delta_posistion)
-                if distance > 0.0:
-
-                    # CALCULATE ELECTROSTATIC FORCE (WEAK)
+                if distance > 0.0: 
+		
+		    # CALCULATE ELECTROSTATIC FORCE (WEAK)
                     dir_left_to_right = delta_posistion / distance
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
@@ -179,7 +169,7 @@ class Protein:
     def fold(self, iterations, gui=0) -> None:
         if gui != 0:
             self.plot = Plot(self.molecule, self.charges)
-
+        
         for i in range(iterations):
             for index in self.aa_start_index:
                 self.rotate_segments(index)
@@ -188,6 +178,7 @@ class Protein:
                     self.update_plot()
             if gui == 1:
                 self.update_plot()
+                LinePlt.plot(self.atoms[i] for i in self.aa_start_index)
         if gui != 0:
             self.plot.close()
 
@@ -196,6 +187,8 @@ class Protein:
         self.plot.update(self.molecule)
 
     def create_plot(self) -> None:
+        LinePlt.plot([self.atoms[i] for i in self.aa_start_index])
+
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
         Plot.plot(self.molecule, self.charges)
 
