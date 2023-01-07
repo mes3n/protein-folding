@@ -119,11 +119,11 @@ class Protein:
                     # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO
                     h_bond_force = 0.0
                     if distance < 0.2:
-                        if atom_left.element == 'H':
-                            if atom_right.element in ('O', 'N'):
+                        if atom_left.symbol == 'H':
+                            if atom_right.symbol in ('O', 'N'):
                                 h_bond_force = 1.0e-04
-                        if atom_right.element == 'H':
-                            if atom_left.element in ('O', 'N'):
+                        if atom_right.symbol == 'H':
+                            if atom_left.symbol in ('O', 'N'):
                                 h_bond_force = 1.0e-04
 
                     net_torque_left += np.cross((
