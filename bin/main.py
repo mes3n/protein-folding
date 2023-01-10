@@ -41,18 +41,9 @@ class Atom:
 
 
 class Protein:
-    def __init__(self, file_name='', *args, **kwargs) -> None:
-        if len(file_name):
-            try:
-                pdbfile = biotite.structure.io.pdb.PDBFile.read(
-                    file_name)
-                self.molecule: biotite.structure.AtomArray = biotite.structure.io.pdb.get_structure(
-                    pdbfile, model=True)  # only kept for displaying the molecule
-            except FileNotFoundError as ex:
-                print(f"Could not load file: {file_name}. Loading from biotite info.")
-                self.molecule: biotite.structure.AtomArray = AssembleTC.assemble()
-        else:
-            self.molecule: biotite.structure.AtomArray = AssembleTC.assemble()
+    def __init__(self, *args, **kwargs) -> None:
+
+        self.molecule: biotite.structure.AtomArray = AssembleTC.assemble()
         
         self.molecule.bonds = biotite.structure.connect_via_residue_names(  # type: ignore
             self.molecule)
@@ -87,7 +78,7 @@ class Protein:
                 distance = np.linalg.norm(delta_posistion)
                 if distance > 0.0: 
 		
-		    # CALCULATE ELECTROSTATIC FORCE (WEAK)
+                    # CALCULATE ELECTROSTATIC FORCE (WEAK)
                     dir_left_to_right = delta_posistion / distance
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
@@ -100,21 +91,20 @@ class Protein:
 
                     # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
                     # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
-                    hydrophobicity_left  = 0.000002 * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(atom_left.position - molecule_center)
-                    hydrophobicity_right = 0.000002 * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(atom_right.position - molecule_center)
-                    
                     left_to_center  = atom_left.position - molecule_center
                     right_to_center = atom_right.position - molecule_center
 
-                    # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO
+                    hydrophobicity_left  = 0.000002 * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(left_to_center)
+                    hydrophobicity_right = 0.000002 * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(right_to_center)
+                    
+
+                    # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO  # TODO: could be double
                     h_bond_force = 0.0
                     if distance < 0.2:
-                        if atom_left.symbol == 'H':
-                            if atom_right.symbol in ('O', 'N'):
-                                h_bond_force = 1.0e-04
-                        if atom_right.symbol == 'H':
-                            if atom_left.symbol in ('O', 'N'):
-                                h_bond_force = 1.0e-04
+                        if atom_left.symbol == 'H' and atom_right.symbol in ('O', 'N'):
+                            h_bond_force = 1.0e-04
+                        if atom_right.symbol == 'H' and atom_left.symbol in ('O', 'N'):
+                            h_bond_force = 1.0e-04
 
                     net_torque_left += np.cross((
                         (dir_left_to_right * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
