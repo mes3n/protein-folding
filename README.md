@@ -36,3 +36,6 @@ python bin/main.py 6 0
 ## References
 1. Kunzmann, P. & Hamacher, K. BMC Bioinformatics (2018) 19:346.
 https://doi.org/10.1186/s12859-018-2367-z
+
+2. Designing a 20-residue protein.
+Neidigh, J.W., Fesinmeyer, R.M., Andersen, N.H. (2002) Nat Struct Biol 9: 425-430
