@@ -3,6 +3,7 @@ import biotite.structure
 
 import numpy as np
 
+from lineplt import LinePlt
 
 class Compare:
     def __init__(self):
@@ -22,15 +23,35 @@ class Compare:
                 prev_res = res
         self.aa_positions = np.delete(self.aa_positions, 0, axis=0)
 
-        self.similarity()
+    def similarity(self, positions) -> float:
+        R, t = self.umeyama(positions, self.aa_positions)
+        aligned = np.dot(positions, R) + t
 
+        # LinePlt.plot(self.aa_positions, aligned, coor=True)
 
-    def similarity(self, atoms, only_aa=True) -> float:
-        comp_atom_positions = np.array(a.position for a in atoms)
-        if only_aa:
-            pass
+        return np.mean(np.linalg.norm(aligned - self.aa_positions, axis=1))
 
-        return 1.0
+    def umeyama(self, P, Q):
+        assert P.shape == Q.shape
+        n, _ = P.shape
+
+        centeredP = P - P.mean(axis=0)
+        centeredQ = Q - Q.mean(axis=0)
+
+        C = np.dot(np.transpose(centeredP), centeredQ) / n
+
+        V, S, W = np.linalg.svd(C)
+        d = (np.linalg.det(V) * np.linalg.det(W)) < 0.0
+
+        if d:
+            S[-1] = -S[-1]
+            V[:, -1] = -V[:, -1]
+
+        R = np.dot(V, W)
+
+        t = Q.mean(axis=0) - P.mean(axis=0).dot(1.0*R)
+
+        return R, t
 
 if __name__ == '__main__':
     c = Compare()
