@@ -35,18 +35,24 @@ class LinePlt:
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     @staticmethod
-    def plot(atoms):
+    def plot(*atomss, coor=False):
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
 
-        x, y, z = \
-            [a.position[0] for a in atoms], \
-            [a.position[1] for a in atoms], \
-            [a.position[2] for a in atoms]
+        for atoms, c in zip(atomss, ['g', 'b', 'r', 'y', 'p'][:len(atomss)]):
+            if not coor:
+                x, y, z = \
+                    [a.position[0] for a in atoms], \
+                    [a.position[1] for a in atoms], \
+                    [a.position[2] for a in atoms]
+            else:
+                x, y, z = \
+                    [c[0] for c in atoms], \
+                    [c[1] for c in atoms], \
+                    [c[2] for c in atoms]
 
-        ax.scatter(x, y, z, c='b', s=100)
-        ax.plot(x, y, z, color='g')
+            ax.scatter(x, y, z, c=c, s=100)
+            ax.plot(x, y, z, color=c)
 
         LinePlt.set_axes_equal(ax)
-
         plt.show()
