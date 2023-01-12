@@ -69,17 +69,21 @@ class Protein:
         net_torque_right: np.ndarray[float, np.dtype] = np.array([0., 0., 0.])
 
         molecule_center = np.mean([a.position for a in self.atoms], axis=0)
-        axis_left = self.atoms[0].position - pivot_point
-        axis_right = self.atoms[-1].position - pivot_point
+        axis_left = self.atoms[0].position - pivot_point  # points middle and out
+        axis_right = self.atoms[-1].position - pivot_point  # - ||-
 
+        # add comment
         for atom_left in self.atoms[:split]:
             for atom_right in self.atoms[split:]:
-                delta_posistion = atom_left.position - atom_right.position
-                distance = np.linalg.norm(delta_posistion)
+                delta_posistion = atom_left.position - atom_right.position  # from right to left
+                distance = np.linalg.norm(delta_posistion)  
                 if distance > 0.0: 
 		
-                    # CALCULATE ELECTROSTATIC FORCE (WEAK)
-                    dir_left_to_right = delta_posistion / distance
+		    # CALCULATE ELECTROSTATIC FORCE (WEAK)
+                    dir_right_to_left = delta_posistion / distance
+
+                    # TODO: TODO: TODO:
+                    # WTF maybe shouldnt use, andreas recomends to use radius from center -> atoms
                     radius_left = axis_left * (np.linalg.norm(atom_left.position -
                          pivot_point) / np.linalg.norm(axis_left))
                     radius_right = axis_right * (np.linalg.norm(atom_right.position -
@@ -107,10 +111,10 @@ class Protein:
                             h_bond_force = 1.0e-04
 
                     net_torque_left += np.cross((
-                        (dir_left_to_right * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
+                        (-dir_right_to_left * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
                     ), radius_left)
                     net_torque_right += np.cross((
-                        (-dir_left_to_right * (electrostatic_force + h_bond_force)) + (hydrophobicity_right * right_to_center)
+                        (dir_right_to_left * (electrostatic_force + h_bond_force)) + (hydrophobicity_right * right_to_center)
                     ), radius_right)
 
         return net_torque_left, net_torque_right
@@ -121,8 +125,7 @@ class Protein:
         axis_left = self.atoms[0].position - origin
         axis_right = self.atoms[-1].position - origin
 
-        torque_left, torque_right = \
-            self.calculate_torque_on_segs(index)
+        torque_left, torque_right = self.calculate_torque_on_segs(index)
 
         rotation_axis_left = np.cross(torque_left, axis_left)
         rotation_axis_right = np.cross(torque_right, axis_right)
@@ -153,8 +156,6 @@ class Protein:
                                 rotation_axis_right, -np.linalg.norm(torque_right)
                             ), atom.position - origin) + origin
                         
-                        return
-
 
     def fold(self, iterations, gui=0) -> None:
         if gui != 0:
