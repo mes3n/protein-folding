@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 import numpy as np
+
 
 class LinePlt:
 
@@ -39,7 +39,7 @@ class LinePlt:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
 
-        for atoms, c in zip(atomss, ['g', 'b', 'r', 'y', 'p'][:len(atomss)]):
+        for atoms, c in zip(atomss, ['g', 'b', 'r', 'y', 'p']):
             if not coor:
                 x, y, z = \
                     [a.position[0] for a in atoms], \
@@ -53,6 +53,8 @@ class LinePlt:
 
             ax.scatter(x, y, z, c=c, s=100)
             ax.plot(x, y, z, color=c)
+
+        # ax.quiver(0, 0, 0, 10, 10, 10)
 
         LinePlt.set_axes_equal(ax)
         plt.show()

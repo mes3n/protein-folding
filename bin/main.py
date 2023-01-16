@@ -64,6 +64,9 @@ class Protein:
         self.plot: Plot = None  # variable to manage background plot
         self.comp: Compare = Compare()
 
+        self.torques = []
+        self.prev_aa_positions = self.aa_positions
+
     @property
     def aa_positions(self):
         return np.array([self.atoms[i].position for i in self.aa_start_index])
@@ -102,10 +105,8 @@ class Protein:
                     # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO  # TODO: could be double
                     h_bond_force = 0.0
                     if distance < 0.2:
-                        if atom_left.symbol == 'H' and atom_right.symbol in ('O', 'N'):
-                            h_bond_force = 1.0e-03
-                            print("H_BOND")
-                        if atom_right.symbol == 'H' and atom_left.symbol in ('O', 'N'):
+                        if (atom_left.symbol == 'H' and atom_right.symbol in ('O', 'N')) \
+                        or (atom_right.symbol == 'H' and atom_left.symbol in ('O', 'N')):
                             h_bond_force = 1.0e-03
                             print("H_BOND")
 
@@ -126,10 +127,10 @@ class Protein:
 
         torque_left, torque_right = self.calculate_torque_on_segs(index)  # TODO: shoudl probably be smaller
 
-        abs_torque_left = np.linalg.norm(torque_left) * 0.005
-        abs_torque_right = np.linalg.norm(torque_right) * 0.005
+        abs_torque_left = np.linalg.norm(torque_left) * 0.0015
+        abs_torque_right = np.linalg.norm(torque_right) * 0.0015
 
-        # print(abs_torque_left, abs_torque_right)
+        # self.torques.append((torque_left, torque_right))
 
         rotation_axis_left = np.cross(torque_left, axis_left)
         rotation_axis_right = np.cross(torque_right, axis_right)
@@ -142,7 +143,6 @@ class Protein:
 
         for atom in self.atoms[index:]:
             atom.position = np.dot(rot_mat_right, atom.position - origin) + origin
-
 
         # TODO: TODO: TODO
         # Make sure bonds cant be bent too much
@@ -182,6 +182,7 @@ class Protein:
             self.plot = Plot(self.molecule, self.charges)
         
         print(f'{self.comp.similarity(self.aa_positions)=}')
+        print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
 
         for i in range(iterations):
             for index in self.aa_start_index:
@@ -190,8 +191,10 @@ class Protein:
                 if gui == 2:
                     self.update_plot()
 
-            similarity.append(self.comp.similarity(self.aa_positions))
+            similarity.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
             print(f'{self.comp.similarity(self.aa_positions)=}')
+            print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
+            self.prev_aa_positions = self.aa_positions
 
             if gui == 1:
                 self.update_plot()
@@ -199,6 +202,7 @@ class Protein:
             self.plot.close()
 
         print(similarity)
+        # print(self.torques)
         return similarity
 
     def update_plot(self) -> None:
@@ -206,7 +210,7 @@ class Protein:
         self.plot.update(self.molecule)
 
     def create_plot(self) -> None:
-        LinePlt.plot([self.atoms[i] for i in self.aa_start_index])
+        LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)
 
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
         Plot.plot(self.molecule, self.charges)

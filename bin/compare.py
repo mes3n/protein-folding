@@ -24,14 +24,22 @@ class Compare:
         self.aa_positions = np.delete(self.aa_positions, 0, axis=0)
 
     def similarity(self, positions) -> float:
-        R, t = self.umeyama(positions, self.aa_positions)
-        aligned = np.dot(positions, R) + t
+        aligned = self.umeyama(positions, self.aa_positions)
 
         # LinePlt.plot(self.aa_positions, aligned, coor=True)
 
         return np.mean(np.linalg.norm(aligned - self.aa_positions, axis=1))
 
-    def umeyama(self, P, Q):
+    @staticmethod
+    def similarity2(positions1, positions2) -> float:
+        aligned = Compare.umeyama(positions1, positions2)
+
+        # LinePlt.plot(self.aa_positions, aligned, coor=True)
+
+        return np.mean(np.linalg.norm(aligned - positions2, axis=1))
+
+    @staticmethod
+    def umeyama(P, Q):
         assert P.shape == Q.shape
         n, _ = P.shape
 
@@ -51,7 +59,8 @@ class Compare:
 
         t = Q.mean(axis=0) - P.mean(axis=0).dot(1.0*R)
 
-        return R, t
+        return np.dot(P, R) + t
+
 
 if __name__ == '__main__':
     c = Compare()
