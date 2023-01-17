@@ -11,7 +11,13 @@ from compare import Compare
 
 import sys
 
-FORCE_CONSTANT = 0.1  # TODO: find a good constant
+
+# These are all relative and differences correspond to averge values
+STEP                 = 2.0e-6
+ELECTROSTATIC_WEIGHT = 0.0e-1
+HYDROPHOBIC_WEIGHT   = 1.0e-3
+HBOND_WEIGHT         = 1.0e-2
+
 
 '''
 Fold protein based on partial charges of atoms
@@ -89,7 +95,7 @@ class Protein:
                     # CALCULATE ELECTROSTATIC FORCE (WEAK)
                     dir_right_to_left = delta_posistion / distance
 
-                    electrostatic_force = 0.1 * (atom_left.partial_charge * atom_right.partial_charge) * (distance**-2)
+                    electrostatic_force = ELECTROSTATIC_WEIGHT * (atom_left.partial_charge * atom_right.partial_charge) * (distance**-2)
                     if atom_left.partial_charge*atom_right.partial_charge > 0.0:
                         electrostatic_force *= -1.0  # repuslive force if same signs
 
@@ -98,8 +104,8 @@ class Protein:
                     left_to_center  = atom_left.position - molecule_center
                     right_to_center = atom_right.position - molecule_center
 
-                    hydrophobicity_left  = 0.000040 * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(left_to_center)**2
-                    hydrophobicity_right = 0.000040 * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(right_to_center)**2
+                    hydrophobicity_left  = HYDROPHOBIC_WEIGHT * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(left_to_center)**2
+                    hydrophobicity_right = HYDROPHOBIC_WEIGHT * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(right_to_center)**2
                     
 
                     # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO  # TODO: could be double
@@ -107,8 +113,8 @@ class Protein:
                     if distance < 0.2:
                         if (atom_left.symbol == 'H' and atom_right.symbol in ('O', 'N')) \
                         or (atom_right.symbol == 'H' and atom_left.symbol in ('O', 'N')):
-                            h_bond_force = 1.0e-03
-                            print("H_BOND")
+                            h_bond_force = HBOND_WEIGHT
+                            print('H_BOND')
 
                     net_torque_left += np.cross((
                         (-dir_right_to_left * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
@@ -119,77 +125,84 @@ class Protein:
 
         return net_torque_left, net_torque_right
 
-    def rotate_segments(self, index: int) -> None:
-        origin = self.atoms[index].position
+    def rotate_segments(self) -> None:
 
-        axis_left = self.atoms[0].position - origin
-        axis_right = self.atoms[-1].position - origin
+        print('calculating torque')
+        torques = []
+        for index in self.aa_start_index:
+            print(f'at {index=}')
+            torques.append(self.calculate_torque_on_segs(index))
 
-        torque_left, torque_right = self.calculate_torque_on_segs(index)  # TODO: shoudl probably be smaller
+        print('rotating segments')
+        for n, index in enumerate(self.aa_start_index):
+            torque_left, torque_right = torques[n]
 
-        abs_torque_left = np.linalg.norm(torque_left) * 0.0015
-        abs_torque_right = np.linalg.norm(torque_right) * 0.0015
+            origin = self.atoms[index].position
 
-        # self.torques.append((torque_left, torque_right))
+            axis_left = self.atoms[0].position - origin
+            axis_right = self.atoms[-1].position - origin
 
-        rotation_axis_left = np.cross(torque_left, axis_left)
-        rotation_axis_right = np.cross(torque_right, axis_right)
+            abs_torque_left = np.linalg.norm(torque_left) * STEP
+            abs_torque_right = np.linalg.norm(torque_right) * STEP
 
-        rot_mat_left = rotation_matrix(rotation_axis_left, abs_torque_left)
-        rot_mat_right = rotation_matrix(rotation_axis_right, abs_torque_right)
+            # self.torques.append((torque_left, torque_right))
 
-        for atom in self.atoms[:index]:
-            atom.position = np.dot(rot_mat_left, atom.position - origin) + origin
+            rotation_axis_left = np.cross(torque_left, axis_left)
+            rotation_axis_right = np.cross(torque_right, axis_right)
 
-        for atom in self.atoms[index:]:
-            atom.position = np.dot(rot_mat_right, atom.position - origin) + origin
+            rot_mat_left = rotation_matrix(rotation_axis_left, abs_torque_left)
+            rot_mat_right = rotation_matrix(rotation_axis_right, abs_torque_right)
 
-        # TODO: TODO: TODO
-        # Make sure bonds cant be bent too much
-        if 0 < index < len(self.atoms) - 1:
-            v1 = self.atoms[index - 1].position - self.atoms[index].position
-            v2 = self.atoms[index + 1].position - self.atoms[index].position
-            theta = np.arccos(np.dot(v1 / np.linalg.norm(v1), v2 / np.linalg.norm(v2)))
-            if theta < np.pi * 0.5:
-                print('Tight angle!', theta)
-                rot_mat_left_reverse = rotation_matrix(rotation_axis_left, -(np.pi*0.5 - theta)*0.5)
-                rot_mat_right_reverse = rotation_matrix(rotation_axis_right, -(np.pi*0.5 - theta)*0.5)
-                for atom in self.atoms[:index]:
-                    atom.position = np.dot(rot_mat_left_reverse, atom.position - origin) + origin
-                for atom in self.atoms[index:]:
-                    atom.position = np.dot(rot_mat_right_reverse, atom.position - origin) + origin
+            for atom in self.atoms[:index]:
+                atom.position = np.dot(rot_mat_left, atom.position - origin) + origin
 
+            for atom in self.atoms[index:]:
+                atom.position = np.dot(rot_mat_right, atom.position - origin) + origin
 
-        # check if atoms collide
-        # if atoms collide: undo rotation
-        for a1 in self.atoms[:index]:
-            for a2 in self.atoms[index:]:
-                if a1 is not a2:
-                    if np.linalg.norm(a1.position - a2.position) < 0.1 :
-                        print('Collision!')
-                        rot_mat_left_reverse = rotation_matrix(rotation_axis_left, -abs_torque_left)
-                        rot_mat_right_reverse = rotation_matrix(rotation_axis_right, -abs_torque_right)
-                        for atom in self.atoms[:index]:
-                            atom.position = np.dot(rot_mat_left_reverse, atom.position - origin) + origin
-                        for atom in self.atoms[index:]:
-                            atom.position = np.dot(rot_mat_right_reverse, atom.position - origin) + origin
+            # TODO: TODO: TODO
+            # Make sure bonds cant be bent too much
+            if 0 < index < len(self.atoms) - 1:
+                v1 = self.atoms[index - 1].position - self.atoms[index].position
+                v2 = self.atoms[index + 1].position - self.atoms[index].position
+                theta = np.arccos(np.dot(v1 / np.linalg.norm(v1), v2 / np.linalg.norm(v2)))
+                if theta < np.pi * 0.5:
+                    print('Tight angle!', theta)
+                    rotation_axis_bond = np.cross(v1, v2)
+                    rot_mat_left_reverse = rotation_matrix(rotation_axis_bond, -(np.pi*0.5 - theta)*0.5)
+                    rot_mat_right_reverse = rotation_matrix(rotation_axis_bond, (np.pi*0.5 - theta)*0.5)
+                    for atom in self.atoms[:index]:
+                        atom.position = np.dot(rot_mat_left_reverse, atom.position - origin) + origin
+                    for atom in self.atoms[index:]:
+                        atom.position = np.dot(rot_mat_right_reverse, atom.position - origin) + origin
+
+            # check if atoms collide
+            # if atoms collide: undo rotation
+            for a1 in self.atoms[:index]:
+                for a2 in self.atoms[index:]:
+                    if a1 is not a2:
+                        if np.linalg.norm(a1.position - a2.position) < 0.1 :
+                            print('Collision!')
+                            rot_mat_left_reverse = rotation_matrix(rotation_axis_left, -abs_torque_left)
+                            rot_mat_right_reverse = rotation_matrix(rotation_axis_right, -abs_torque_right)
+                            for atom in self.atoms[:index]:
+                                atom.position = np.dot(rot_mat_left_reverse, atom.position - origin) + origin
+                            for atom in self.atoms[index:]:
+                                atom.position = np.dot(rot_mat_right_reverse, atom.position - origin) + origin
                         
 
     def fold(self, iterations, gui=0) -> list[float]:
         similarity = []
 
-        if gui != 0:
-            self.plot = Plot(self.molecule, self.charges)
+        # if gui != 0:
+        #     self.plot = Plot(self.molecule, self.charges)
         
         print(f'{self.comp.similarity(self.aa_positions)=}')
         print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
 
-        for i in range(iterations):
-            for index in self.aa_start_index:
-                self.rotate_segments(index)
-                print(f'{i}: {index}')
-                if gui == 2:
-                    self.update_plot()
+        for iteration in range(iterations):
+            print(f'{iteration=}')
+
+            self.rotate_segments()
 
             similarity.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
             print(f'{self.comp.similarity(self.aa_positions)=}')
@@ -197,9 +210,11 @@ class Protein:
             self.prev_aa_positions = self.aa_positions
 
             if gui == 1:
-                self.update_plot()
-        if gui != 0:
-            self.plot.close()
+                # self.update_plot()
+                LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)
+
+        # if gui != 0:
+        #     self.plot.close()
 
         print(similarity)
         # print(self.torques)
