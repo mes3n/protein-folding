@@ -13,8 +13,8 @@ import sys
 
 
 # These are all relative and differences correspond to averge values
-STEP                 = 2.0e-6
-ELECTROSTATIC_WEIGHT = 0.0e-1
+STEP                 = 5.0e-5
+ELECTROSTATIC_WEIGHT = 1.0e-1
 HYDROPHOBIC_WEIGHT   = 1.0e-3
 HBOND_WEIGHT         = 1.0e-2
 
@@ -101,8 +101,8 @@ class Protein:
 
                     # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
                     # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
-                    left_to_center  = atom_left.position - molecule_center
-                    right_to_center = atom_right.position - molecule_center
+                    left_to_center  = molecule_center - atom_left.position
+                    right_to_center = molecule_center - atom_right.position
 
                     hydrophobicity_left  = HYDROPHOBIC_WEIGHT * (0.2 - abs(atom_left.partial_charge)) * np.linalg.norm(left_to_center)**2
                     hydrophobicity_right = HYDROPHOBIC_WEIGHT * (0.2 - abs(atom_right.partial_charge)) * np.linalg.norm(right_to_center)**2
