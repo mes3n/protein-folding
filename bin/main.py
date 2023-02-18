@@ -11,12 +11,16 @@ from compare import Compare
 
 import sys
 
+from matplotlib import pyplot as plt
+
+import json
+
 
 # These are all relative and differences correspond to averge values
-STEP                 = 1.0e-7
-ELECTROSTATIC_WEIGHT = 0.0e-2
-HYDROPHOBIC_WEIGHT   = 1.0e1
-HBOND_WEIGHT         = 0.0e-3
+STEP                 = 8.0e-4
+ELECTROSTATIC_WEIGHT = 1.0e-4
+HYDROPHOBIC_WEIGHT   = 1.0e-1
+HBOND_WEIGHT         = 1.0e-2
 
 
 '''
@@ -56,7 +60,9 @@ class Protein:
             self.molecule)
         self.charges = biotite.structure.partial_charges(self.molecule)  # type: ignore
 
-        # # TODO: create atom without H-C H atoms
+
+        print(f'{sum(abs(q) for q in self.charges) / len(self.charges)=}')
+        # TODO: create atom without H-C H atoms
         
         self.aa_start_index: list[int] = [
             j for i, j, _ in self.molecule.bonds.as_array()
@@ -99,16 +105,7 @@ class Protein:
                     if atom_left.partial_charge*atom_right.partial_charge > 0.0:
                         electrostatic_force *= -1.0  # repuslive force if same signs
 
-                    # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
-                    # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
-                    left_to_center  = molecule_center - atom_left.position
-                    right_to_center = molecule_center - atom_right.position
-
-                    hydrophobicity_left  = HYDROPHOBIC_WEIGHT * (0.4 - abs(atom_left.partial_charge)) # * np.linalg.norm(left_to_center)
-                    hydrophobicity_right = HYDROPHOBIC_WEIGHT * (0.4 - abs(atom_right.partial_charge)) # * np.linalg.norm(right_to_center)
-                    
-
-                    # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO  # TODO: could be double
+                    # CALCULATE ATTRICTION FROM HYDROGEN BONDS (STRONG)  # TODO
                     h_bond_force = 0.0
                     if distance < 0.2:
                         if (atom_left.symbol == 'H' and atom_right.symbol in ('O', 'N')) \
@@ -116,12 +113,32 @@ class Protein:
                             h_bond_force = HBOND_WEIGHT
                             print('H_BOND')
 
-                    net_torque_left += np.cross((
-                        (-dir_right_to_left * (electrostatic_force + h_bond_force)) + (hydrophobicity_left * left_to_center)
-                    ), atom_right.position - pivot_point)
-                    net_torque_right += np.cross((
-                        (dir_right_to_left * (electrostatic_force + h_bond_force)) + (hydrophobicity_right * right_to_center)
-                    ), atom_left.position - pivot_point)
+                    net_torque_left += np.cross(
+                        -dir_right_to_left * (electrostatic_force + h_bond_force)
+                    , atom_right.position - pivot_point)
+                    net_torque_right += np.cross(
+                        dir_right_to_left * (electrostatic_force + h_bond_force)
+                    , atom_left.position - pivot_point)
+
+        for atom in self.atoms[:split]:
+            # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
+            # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
+            to_center  = molecule_center - atom.position
+            hydrophobicity  = HYDROPHOBIC_WEIGHT * (0.1 - abs(atom.partial_charge)) * to_center
+
+            net_torque_left += np.cross(
+                hydrophobicity,
+            atom.position - pivot_point)
+
+        for atom in self.atoms[split:]:
+            # CALCULATE HYDROPHOBIC BEHAVIOR (STRONG)  # TODO
+            # currently with magic number 0.2 (max charge is 0.4) to create +force on small charges and -force on large ones
+            to_center  = molecule_center - atom.position
+            hydrophobicity  = HYDROPHOBIC_WEIGHT * (0.1 - abs(atom.partial_charge)) * to_center
+
+            net_torque_right += np.cross(
+                hydrophobicity,
+            atom.position - pivot_point)
 
         return net_torque_left, net_torque_right
 
@@ -180,7 +197,7 @@ class Protein:
             for a1 in self.atoms[:index]:
                 for a2 in self.atoms[index:]:
                     if a1 is not a2:
-                        if np.linalg.norm(a1.position - a2.position) < 0.1 :
+                        if np.linalg.norm(a1.position - a2.position) < 0.2 :
                             print('Collision!')
                             rot_mat_left_reverse = rotation_matrix(rotation_axis_left, -abs_torque_left)
                             rot_mat_right_reverse = rotation_matrix(rotation_axis_right, -abs_torque_right)
@@ -190,7 +207,8 @@ class Protein:
                                 atom.position = np.dot(rot_mat_right_reverse, atom.position - origin) + origin
                         
 
-    def fold(self, iterations, gui=0) -> list[float]:
+    def fold(self, iterations, gui=0):
+        step_sim = []
         similarity = []
 
         # if gui != 0:
@@ -204,24 +222,56 @@ class Protein:
 
             self.rotate_segments()
 
-            similarity.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
+            step_sim.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
+            similarity.append(self.comp.similarity(self.aa_positions))
             print(f'{self.comp.similarity(self.aa_positions)=}')
             print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
             self.prev_aa_positions = self.aa_positions
 
             if gui == 1:
                 # self.update_plot()
-                LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)
+                LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)  # , save=f'assets/comp{iteration}.png'
+            
+            if gui == 2:
+                LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True, save=f'out/comp{iteration}.png')
 
-            # print([np.mean([a.position for a in self.atoms], axis=0)])
-            # LinePlt.plot(self.aa_positions, [np.mean([a.position for a in self.atoms], axis=0)], coor=True)
+            print(step_sim)
+            print(similarity)
 
-        # if gui != 0:
-        #     self.plot.close()
+        plt.rcParams['mathtext.fontset'] = 'stix'
+        plt.rcParams['font.family'] = 'STIXGeneral'
+        # plt.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
-        print(similarity)
-        # print(self.torques)
-        return similarity
+        plt.plot(step_sim)
+        plt.ylim(0, max(step_sim) * 1.2)
+        plt.xlabel('Iterations')
+        plt.ylabel('Distance')
+        plt.xticks([])
+        plt.yticks([])
+        plt.title('Average distance of each atom to previous iteration')
+        plt.savefig('out/step_similarity.png')
+        plt.show()
+        plt.close()
+
+        plt.plot(similarity)
+        plt.ylim(0, max(similarity) * 1.2)
+        plt.xlabel('Iterations')
+        plt.ylabel('Distance')
+        plt.xticks([])
+        plt.yticks([])
+        plt.title('Average distance of each atom to reference protein')
+        plt.savefig('out/ref_similarity.png')
+        plt.show()
+        plt.close()
+
+        data = json.load('results/raw.json')
+        data['hb and es 500'] = {
+            'ref_similarity': similarity,
+            'step_simularity': step_sim
+        }
+        json.dump('results/raw2.json')
+
+        return
 
     def update_plot(self) -> None:
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
