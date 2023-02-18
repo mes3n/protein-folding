@@ -4,7 +4,6 @@ import math
 import biotite.structure.io.pdb
 import biotite.structure
 
-from plot import Plot
 from lineplt import LinePlt
 from assemble import AssembleTC
 from compare import Compare
@@ -73,7 +72,6 @@ class Protein:
             self.molecule.coord, self.charges, self.molecule.element)])  
         # create custom molecule class from biotite molecule
 
-        self.plot: Plot = None  # variable to manage background plot
         self.comp: Compare = Compare()
 
         self.torques = []
@@ -268,22 +266,20 @@ class Protein:
             data = json.load(f)
             data['new'] = {
                 'ref_similarity': similarity,
-                'step_simularity': step_sim
+                'step_similarity': step_sim
             }
         with open('results/raw.json', 'w') as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=2)
 
         return
 
     def update_plot(self) -> None:
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
-        self.plot.update(self.molecule)
 
     def create_plot(self) -> None:
         LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)
 
         self.molecule._coord = np.array([atom.position for atom in self.atoms])
-        Plot.plot(self.molecule, self.charges)
 
 
 def main() -> None:
