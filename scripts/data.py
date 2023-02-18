@@ -11,31 +11,31 @@ similarity = [14.502118341750116, 14.44988288258548, 14.396493383821403, 14.3425
 plt.plot(step_sim)
 plt.ylim(0, max(step_sim) * 1.2)
 plt.xlabel('Iterations')
-plt.ylabel('Distance')
-plt.xticks([])
-plt.yticks([])
+plt.ylabel('Distance [Å]')
+# plt.xticks([])
+# plt.yticks([])
 plt.title('Average distance of each atom to previous iteration')
-plt.savefig('assets/step_sim.png')
+plt.savefig('results/step_similarity.svg')
 plt.show()
 plt.close()
 
 plt.plot(similarity)
 plt.ylim(0, max(similarity) * 1.2)
 plt.xlabel('Iterations')
-plt.ylabel('Distance')
-plt.xticks([])
-plt.yticks([])
+plt.ylabel('Distance [Å]')
+# plt.xticks([])
+# plt.yticks([])
 plt.title('Average distance of each atom to reference protein')
-plt.savefig('assets/similarity.png')
+plt.savefig('results/ref_similarity.svg')
 plt.show()
 plt.close()
 
-with open('results/raw.json', 'r') as f:
-  data = json.load(f)
-  data['new'] = {
-      'ref_similarity': similarity,
-      'step_similarity': step_sim
-  }
+# with open('results/raw.json', 'r') as f:
+#   data = json.load(f)
+#   data['new'] = {
+#       'ref_similarity': similarity,
+#       'step_similarity': step_sim
+#   }
 
-with open('results/raw.json', 'w') as f:
-  json.dump(data, f)
+# with open('results/raw.json', 'w') as f:
+#   json.dump(data, f, indent=2)
