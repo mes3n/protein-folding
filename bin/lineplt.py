@@ -35,7 +35,7 @@ class LinePlt:
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     @staticmethod
-    def plot(*atomss, coor=False):
+    def plot(*atomss, coor=False, save=''):
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
 
@@ -54,7 +54,9 @@ class LinePlt:
             ax.scatter(x, y, z, c=c, s=100)
             ax.plot(x, y, z, color=c)
 
-        # ax.quiver(0, 0, 0, 10, 10, 10)
-
         LinePlt.set_axes_equal(ax)
-        plt.show()
+
+        if save:
+            plt.savefig(save, bbox_inches='tight')
+        else:
+            plt.show()
