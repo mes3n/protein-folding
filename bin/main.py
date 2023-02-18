@@ -264,12 +264,14 @@ class Protein:
         plt.show()
         plt.close()
 
-        data = json.load('results/raw.json')
-        data['hb and es 500'] = {
-            'ref_similarity': similarity,
-            'step_simularity': step_sim
-        }
-        json.dump('results/raw2.json')
+        with open('results/raw.json', 'r') as f:
+            data = json.load(f)
+            data['new'] = {
+                'ref_similarity': similarity,
+                'step_simularity': step_sim
+            }
+        with open('results/raw.json', 'w') as f:
+            json.dump(f)
 
         return
 
