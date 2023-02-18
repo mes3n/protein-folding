@@ -271,7 +271,7 @@ class Protein:
                 'step_simularity': step_sim
             }
         with open('results/raw.json', 'w') as f:
-            json.dump(f)
+            json.dump(data, f)
 
         return
 
