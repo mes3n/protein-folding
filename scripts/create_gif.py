@@ -94,7 +94,11 @@ class LinePlt:
         LinePlt.set_axes_equal(ax)
         
         ax.view_init(90, 0, 0)
-        ax.set_axis_off()
+        # ax.set_axis_off()
+
+        ax.set_xlabel('x [Å]')
+        ax.set_ylabel('y [Å]')
+        ax.set_zlabel('z [Å]')
 
         if save:
             plt.savefig(save, bbox_inches='tight')
@@ -110,10 +114,12 @@ with open('results/raw.json', 'r') as f:
 
 comp = Compare()
 
-for i, position in enumerate(positions):
-  LinePlt.plot(position, coor=True, save=f'giffy/pos{i}.png', title=f'iteration={i}')
+# for i, position in enumerate(positions):
+#   LinePlt.plot(position, coor=True, save=f'giffy/pos{i}.png', title=f'iteration={i}')
 
-# LinePlt.plot(Compare.umeyama(np.array(positions[-1]), comp.positions), comp.positions, coor=True)
+# LinePlt.plot(Compare.umeyama(np.array(positions[-1]), comp.positions), 
+#              comp.positions, coor=True, 
+#              title='Generated model and refernce model')
 
 # data['normal i=500']['positions'] = data['normal i=500']['positions'][7:]
 
