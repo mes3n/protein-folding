@@ -233,6 +233,15 @@ class Protein:
             if gui == 2:
                 LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True, save=f'out/comp{iteration}.png')
 
+            with open('results/raw.json', 'r') as f:
+                data = json.load(f)
+                data['new']['positions'].append([[p for p in self.atoms[i].position] for i in self.aa_start_index])
+                data['new']['ref_similarity'] = similarity
+                data['new']['step_similarity'] = step_sim
+
+            with open('results/raw.json', 'w') as f:
+                json.dump(data, f, indent=2)
+
             print(step_sim)
             print(similarity)
 
@@ -264,10 +273,8 @@ class Protein:
 
         with open('results/raw.json', 'r') as f:
             data = json.load(f)
-            data['new'] = {
-                'ref_similarity': similarity,
-                'step_similarity': step_sim
-            }
+            data['new']['ref_similarity'] = similarity
+            data['new']['ref_similarity'] = step_sim
         with open('results/raw.json', 'w') as f:
             json.dump(data, f, indent=2)
 
@@ -284,6 +291,7 @@ class Protein:
 
 def main() -> None:
 
+    global STEP
     iterations = 6
     gui = 0
 
@@ -300,6 +308,13 @@ def main() -> None:
         except (ValueError, AssertionError):
             sys.exit("Invalid input. Enter gui mode as an 0 <= int <= 2.")
 
+    if len(sys.argv) > 3:
+        try:
+            STEP = float(sys.argv[3])
+        except ValueError:
+            sys.exit("Invalid input. Enter step as a float.")
+
+    print(f'Running with {iterations=}, {gui=} and {STEP=}')
 
     trp_cage: Protein = Protein()
     trp_cage.fold(iterations, gui)

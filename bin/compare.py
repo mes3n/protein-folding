@@ -3,7 +3,6 @@ import biotite.structure
 
 import numpy as np
 
-from lineplt import LinePlt
 
 class Compare:
     def __init__(self):

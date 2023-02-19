@@ -56,7 +56,11 @@ class LinePlt:
 
         LinePlt.set_axes_equal(ax)
 
+        ax.view_init(90, 0, 0)
+
         if save:
             plt.savefig(save, bbox_inches='tight')
         else:
             plt.show()
+        
+        plt.close(fig)
