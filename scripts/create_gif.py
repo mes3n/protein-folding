@@ -68,14 +68,15 @@ class LinePlt:
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     @staticmethod
-    def plot(*atomss, coor=False, save=''):
+    def plot(*atomss, coor=False, save='', title=''):
         plt.rcParams['mathtext.fontset'] = 'stix'
         plt.rcParams['font.family'] = 'STIXGeneral'
 
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
+        ax.set_title(title)
 
-        for atoms, c in zip(atomss, ['g', 'b', 'r', 'y', 'p']):
+        for atoms, c in zip(atomss, ['b', 'g', 'r', 'y', 'p']):
             if not coor:
                 x, y, z = \
                     [a.position[0] for a in atoms], \
@@ -93,7 +94,7 @@ class LinePlt:
         LinePlt.set_axes_equal(ax)
         
         ax.view_init(90, 0, 0)
-        # ax.set_axis_off()
+        ax.set_axis_off()
 
         if save:
             plt.savefig(save, bbox_inches='tight')
@@ -109,10 +110,10 @@ with open('results/raw.json', 'r') as f:
 
 comp = Compare()
 
-# for i, position in enumerate(positions):
-#   LinePlt.plot(position, coor=True, save=f'giffy/pos{i}.png')
+for i, position in enumerate(positions):
+  LinePlt.plot(position, coor=True, save=f'giffy/pos{i}.png', title=f'iteration={i}')
 
-LinePlt.plot(Compare.umeyama(np.array(positions[-1]), comp.positions), comp.positions, coor=True)
+# LinePlt.plot(Compare.umeyama(np.array(positions[-1]), comp.positions), comp.positions, coor=True)
 
 # data['normal i=500']['positions'] = data['normal i=500']['positions'][7:]
 
