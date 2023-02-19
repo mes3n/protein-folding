@@ -40,23 +40,35 @@ Set the gui mode as the second argument when running the main script, default is
 python bin/main.py 6 0
 ```
 
-Constant weight variables can be used to scale to influence of different forces but are not recommended to modify. The step can be modified. 
+Constant weight variables can be used to scale to influence of different forces but are not recommended to modify. The step can be modified either by editing directly in [bin/main.py](bin/main.py) or by running the program with a third argument, if no argument is giving the step constant will be used (8.0e-4):
+
+```bash
+python bin/main.py 6 0 8.0e-4
+```
 
 ## Results
 
-Running with $step = 8 \cdot 10^{-4}$ produces the following results.
+Running 500 iterations with $step = 8 \cdot 10^{-4}$ produces the following results.
 
-![image](results/step_similarity.svg)
+![image](results/normal/protein.png)
 
-How much to protein moves after each iteration.
+The plot shows the generated protein model (green) and the reference model [2] (green) after being aligned through translation and rotation.
 
-![image](results/ref_similarity.svg)
+![image](results/normal/step.svg)
 
-How close the protein matches the theoretical result (ref 2, molecules/1l2y.pdb)
+The figure illustrates the movement of the protein over 500 iterations. The y-axis is the distance each corresponding atom of the model moved following the previous iteration.
+
+![image](results/normal/reference.svg)
+
+The figure depicts how well the generated protein model matches the reference model result [2]. The y-axis depicts the average distance of each corresponding atom in the reference and generative model.
+
+![gif](results/positions.gif)
+
+The animation shows the different positions the generated model through the process of its folding. 
 
 ## References
 1. Kunzmann, P. & Hamacher, K. BMC Bioinformatics (2018) 19:346.
 https://doi.org/10.1186/s12859-018-2367-z
 
 2. Designing a 20-residue protein.
-Neidigh, J.W., Fesinmeyer, R.M., Andersen, N.H. (2002) Nat Struct Biol 9: 425-430
+Neidigh, J.W., Fesinmeyer, R.M., Andersen, N.H. (2002) Nat Struct Biol 9: 425-430. See file [here](molecules/1l2y.pdb).
