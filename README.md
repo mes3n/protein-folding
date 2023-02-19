@@ -44,7 +44,7 @@ Constant weight variables can be used to scale to influence of different forces 
 
 ## Results
 
-Running with $step = 8 \cdot 10^{-8}$ produces the following results.
+Running with $step = 8 \cdot 10^{-4}$ produces the following results.
 
 ![image](results/step_similarity.svg)
 
