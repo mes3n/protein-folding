@@ -30,16 +30,20 @@ The program relies on biotite to load amino acids and chain them together (ref 1
 ```bash
 python bin/main.py
 ```
+
+### Iteration count
 Set the number of iterations as the first argument when running the main script, default is 6:
 ```bash
 python bin/main.py 6
 ```
 
+### GUI mode
 Set the gui mode as the second argument when running the main script, default is 0 (only display molecule graph at the end of folding, 1 to display graph after each iteration, 2 to save graph to out after each iteration):
 ```bash
 python bin/main.py 6 0
 ```
 
+### Controlling constants
 Constant weight variables can be used to scale to influence of different forces but are not recommended to modify. The step can be modified either by editing directly in [bin/main.py](bin/main.py) or by running the program with a third argument, if no argument is giving the step constant will be used (8.0e-4):
 
 ```bash
