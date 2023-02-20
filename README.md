@@ -37,6 +37,8 @@ Set the number of iterations as the first argument when running the main script,
 python bin/main.py 6
 ```
 
+10 iterations currently takes 197.45 seconds.
+
 ### GUI mode
 Set the gui mode as the second argument when running the main script, default is 0 (only display molecule graph at the end of folding, 1 to display graph after each iteration, 2 to save graph to out after each iteration):
 ```bash
