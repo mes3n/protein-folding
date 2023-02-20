@@ -50,7 +50,7 @@ python bin/main.py 6 0 8.0e-4
 
 Running 500 iterations with $step = 8 \cdot 10^{-4}$ produces the following results.
 
-![image](results/normal/protein.png)
+![image](results/normal/protein2.png)
 
 The plot shows the generated protein model (green) and the reference model [2] (green) after being aligned through translation and rotation.
 
