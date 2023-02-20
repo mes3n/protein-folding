@@ -206,8 +206,12 @@ class Protein:
                         
 
     def fold(self, iterations, gui=0):
-        step_sim = []
-        similarity = []
+        step_similarity = []
+        ref_similarity = []
+        positions = []
+
+        with open('results/raw.json', 'r') as f:
+            data = json.load(f)
 
         # if gui != 0:
         #     self.plot = Plot(self.molecule, self.charges)
@@ -220,11 +224,18 @@ class Protein:
 
             self.rotate_segments()
 
-            step_sim.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
-            similarity.append(self.comp.similarity(self.aa_positions))
+            step_similarity.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
+            ref_similarity.append(self.comp.similarity(self.aa_positions))
+            positions.append(self.aa_positions)
             print(f'{self.comp.similarity(self.aa_positions)=}')
             print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
             self.prev_aa_positions = self.aa_positions
+
+            data['new'] = {
+                'positions': positions,
+                'ref_similarity': ref_similarity,
+                'step_similarity': step_similarity,
+            }
 
             if gui == 1:
                 # self.update_plot()
@@ -233,50 +244,30 @@ class Protein:
             if gui == 2:
                 LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True, save=f'out/comp{iteration}.png')
 
-            with open('results/raw.json', 'r') as f:
-                data = json.load(f)
-                data['new']['positions'].append([[p for p in self.atoms[i].position] for i in self.aa_start_index])
-                data['new']['ref_similarity'] = similarity
-                data['new']['step_similarity'] = step_sim
-
             with open('results/raw.json', 'w') as f:
                 json.dump(data, f, indent=2)
-
-            print(step_sim)
-            print(similarity)
 
         plt.rcParams['mathtext.fontset'] = 'stix'
         plt.rcParams['font.family'] = 'STIXGeneral'
         # plt.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
-        plt.plot(step_sim)
-        plt.ylim(0, max(step_sim) * 1.2)
+        plt.plot(step_similarity)
+        plt.ylim(0, max(step_similarity) * 1.2)
         plt.xlabel('Iterations')
         plt.ylabel('Distance')
-        plt.xticks([])
-        plt.yticks([])
-        plt.title('Average distance of each atom to previous iteration')
+        plt.title(f'Average distance of each atom to previous iteration with step {STEP}')
         plt.savefig('out/step_similarity.png')
         plt.show()
         plt.close()
 
-        plt.plot(similarity)
-        plt.ylim(0, max(similarity) * 1.2)
+        plt.plot(ref_similarity)
+        plt.ylim(0, max(ref_similarity) * 1.2)
         plt.xlabel('Iterations')
         plt.ylabel('Distance')
-        plt.xticks([])
-        plt.yticks([])
-        plt.title('Average distance of each atom to reference protein')
+        plt.title(f'Average distance of each atom to reference protein with step {STEP}')
         plt.savefig('out/ref_similarity.png')
         plt.show()
         plt.close()
-
-        with open('results/raw.json', 'r') as f:
-            data = json.load(f)
-            data['new']['ref_similarity'] = similarity
-            data['new']['ref_similarity'] = step_sim
-        with open('results/raw.json', 'w') as f:
-            json.dump(data, f, indent=2)
 
         return
 
