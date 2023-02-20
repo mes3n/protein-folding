@@ -226,7 +226,7 @@ class Protein:
 
             step_similarity.append(self.comp.similarity2(self.aa_positions, self.prev_aa_positions))
             ref_similarity.append(self.comp.similarity(self.aa_positions))
-            positions.append(self.aa_positions)
+            positions.append(self.aa_positions.tolist())
             print(f'{self.comp.similarity(self.aa_positions)=}')
             print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
             self.prev_aa_positions = self.aa_positions
