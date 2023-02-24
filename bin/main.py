@@ -210,9 +210,6 @@ class Protein:
         ref_similarity = []
         positions = []
 
-        with open('results/raw.json', 'r') as f:
-            data: dict = json.load(f)
-
         key = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         while key in data.keys():
             key += '_new'
@@ -232,18 +229,22 @@ class Protein:
             print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
             self.prev_aa_positions = self.aa_positions
 
-            data['new'] = {
-                'positions': positions,
-                'ref_similarity': ref_similarity,
-                'step_similarity': step_similarity,
-            }
-
             if gui == 1:
                 # self.update_plot()
                 LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True)  # , save=f'assets/comp{iteration}.png'
             
             if gui == 2:
                 LinePlt.plot(self.comp.umeyama(self.aa_positions, self.comp.aa_positions), self.comp.aa_positions, coor=True, save=f'out/comp{iteration}.png')
+
+            
+            with open('results/raw.json', 'r') as f:
+                data: dict = json.load(f)
+
+            data[key] = {
+                'positions': positions,
+                'ref_similarity': ref_similarity,
+                'step_similarity': step_similarity,
+            }
 
             with open('results/raw.json', 'w') as f:
                 json.dump(data, f, indent=2)
