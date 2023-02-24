@@ -11,7 +11,7 @@ from compare import Compare
 import sys
 
 from matplotlib import pyplot as plt
-
+from datetime import datetime
 import json
 
 
@@ -211,11 +211,12 @@ class Protein:
         positions = []
 
         with open('results/raw.json', 'r') as f:
-            data = json.load(f)
+            data: dict = json.load(f)
 
-        # if gui != 0:
-        #     self.plot = Plot(self.molecule, self.charges)
-        
+        key = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        while key in data.keys():
+            key += '_new'
+
         print(f'{self.comp.similarity(self.aa_positions)=}')
         print(f'{self.comp.similarity2(self.aa_positions, self.prev_aa_positions)=}')
 
